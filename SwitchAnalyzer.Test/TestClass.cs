@@ -9,7 +9,7 @@ namespace SwitchAnalyzer.Test
         Case3
     }
 
-    class TestClass
+    class TestClass : TestClass.ITestInterface
     {
         public void TestMethod1()
         {
@@ -33,6 +33,21 @@ namespace SwitchAnalyzer.Test
             }
 
             return TestEnum.Case1;
+        }
+
+        public TestEnum TestMethod3()
+        {
+            ITestInterface s = new TestClass();
+
+            switch (s)
+            {
+                case TestClass a: return TestEnum.Case1;
+                case var inter: return TestEnum.Case2;
+                //default: { break; }
+            }
+        }
+        public interface ITestInterface
+        {
         }
 
         public class NotImplementedExceptionInheritor : NotImplementedException

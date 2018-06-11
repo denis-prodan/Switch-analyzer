@@ -1,6 +1,6 @@
 # Switch-analyzer
 C# analyzer for non-exhaustive cases in switch with enums.
-Verifies that switch statement checks all existing enum values if case if there is no **default** branch or it throws *NotImplementedException* (or one of its inheritors).
+Verifies that switch statement checks all existing enum values if case if there is no **default** branch or it throws any *Exception*.
 
 For code:
 ```C#
@@ -31,4 +31,7 @@ At this moment analyzer should support common cases:
 * Parentnesis.
 * Function call as switch argument.
 
-You can find more cases in unit test
+New version has support for Interface implementations checks in switch-case with pattern matching. 
+Also, treats "var" case as intended behavior and performs no checks in case if it is present.
+
+You can find more cases in unit tests

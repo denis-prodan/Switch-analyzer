@@ -7,7 +7,7 @@ using TestHelper;
 namespace SwitchAnalyzer.Test
 {
     [TestClass]
-    public class UnitTest : CodeFixVerifier
+    public class EnumSwitchAnalyzerTests : CodeFixVerifier
     {
         private readonly string codeStart = @"
     using System;
@@ -133,7 +133,7 @@ namespace SwitchAnalyzer.Test
         }
 
         [TestMethod]
-        public void MultipleValuesSpecified()
+        public void MultipleValuesReturnedInDiagnostic()
         {
             var switchStatement = @"
             switch (TestEnum.Case1)
