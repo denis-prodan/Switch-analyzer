@@ -92,14 +92,17 @@ namespace SwitchAnalyzer.Test
         }
 
         [TestMethod]
-        public void ChecksWithNotImplementedExceptionInheritor()
+        public void ChecksWithThrowInBlock()
         {
             var switchStatement = @"
-            switch (TestEnum.Case1)
+            switch (testValue)
             {
                 case TestEnum.Case2: return TestEnum.Case2;
                 case TestEnum.Case3: return TestEnum.Case3;
-                default: throw new NotImplementedExceptionInheritor();
+                default:{
+                        var s = GetEnum(testValue);
+                        throw new ArgumentException();
+                        }
             }";
 
             var test = $@"{codeStart}
@@ -110,14 +113,16 @@ namespace SwitchAnalyzer.Test
         }
 
         [TestMethod]
-        public void NoChecksWithoutNotImplementedExceptionInDefault()
+        public void NoChecksWithoutThrowInDefault()
         {
             var switchStatement = @"
             switch (TestEnum.Case1)
             {
                 case TestEnum.Case2: {break;}
                 case TestEnum.Case3: {break;}
-                default: throw new ArgumentException();
+                default: {
+                break;
+                }
             }
             return TestEnum.Case2;";
             var test = $@"{codeStart}
@@ -249,7 +254,7 @@ namespace SwitchAnalyzer.Test
         {
             return new DiagnosticResult
             {
-                Id = "SwitchAnalyzer",
+                Id = "SA001",
                 Message = String.Format("Switch case should check enum value(s): {0}", string.Join(", ", expectedEnums)),
                 Severity = DiagnosticSeverity.Warning,
                 Locations =
@@ -262,7 +267,7 @@ namespace SwitchAnalyzer.Test
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new SwitchAnalyzerAnalyzer();
+            return new SwitchAnalyzer();
         }
     }
 }

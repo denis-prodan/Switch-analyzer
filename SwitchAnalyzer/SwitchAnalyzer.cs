@@ -9,9 +9,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace SwitchAnalyzer
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class SwitchAnalyzerAnalyzer : DiagnosticAnalyzer
+    public class SwitchAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "SwitchAnalyzer";
+        public const string DiagnosticId = "SA001";
         private const string Title = "Non exhaustive patterns in switch block";
         private const string MessageFormat = "Switch case should check enum value(s): {0}";
         private const string Description = "All enum cases in switch statement should be checked.";
@@ -31,7 +31,6 @@ namespace SwitchAnalyzer
             var blockSyntaxes = GetBlockSyntaxes(context.CodeBlock);
 
             var switchStatements = blockSyntaxes.SelectMany(GetSwitchesFromBlock);
-            var s = switchStatements.FirstOrDefault();
 
             foreach (var switchStatement in switchStatements)
             {
@@ -42,13 +41,13 @@ namespace SwitchAnalyzer
         private static void CheckSwitch(SwitchStatementSyntax switchStatement, CodeBlockAnalysisContext context)
         {
             var expression = switchStatement.Expression;
-            var s = context.SemanticModel.GetTypeInfo(expression);
-            var expressionType = s.ConvertedType;
+            var typeInfo = context.SemanticModel.GetTypeInfo(expression);
+            var expressionType = typeInfo.ConvertedType;
             if (expressionType.TypeKind == TypeKind.Enum)
             {
                 var switchCases = switchStatement.Sections;
                 var defaultMember = GetDefaultExpression(switchCases);
-                var shouldProcessWithDefault = ShouldProcessWithDefault(defaultMember, context);
+                var shouldProcessWithDefault = ShouldProcessWithDefault(defaultMember);
                 if (shouldProcessWithDefault)
                 {
                     var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field);
@@ -76,10 +75,9 @@ namespace SwitchAnalyzer
             }
         }
 
-
         private static (string identifier, string name) GetIdentifierAndName(MemberAccessExpressionSyntax syntax)
         {
-            var simpleAccess = syntax.ChildNodes();
+            var simpleAccess = syntax.ChildNodes().ToList();
 
             var enumValue = simpleAccess.LastOrDefault() as IdentifierNameSyntax;
             if (simpleAccess.FirstOrDefault() is IdentifierNameSyntax enumType && enumValue != null)
@@ -89,32 +87,25 @@ namespace SwitchAnalyzer
             return (null, null);
         }
 
-        private static bool ShouldProcessWithDefault(SwitchSectionSyntax defaultSection, CodeBlockAnalysisContext context)
+        private static bool ShouldProcessWithDefault(SwitchSectionSyntax defaultSection)
         {
             if (defaultSection == null)
                 return true;
 
             var statements = defaultSection.Statements;
 
-            return statements.Any(x => IsStatementThrowsNotImplementedExceptionOrInheritor(x, context));
+            return statements.Any(IsStatementThrowsException);
         }
 
-        private static bool IsStatementThrowsNotImplementedExceptionOrInheritor(StatementSyntax statementSyntax, CodeBlockAnalysisContext context)
+        private static bool IsStatementThrowsException(StatementSyntax statementSyntax)
         {
-            if (!(statementSyntax is ThrowStatementSyntax throwStatement))
-                return false;
-
-            var typeInfo = context.SemanticModel.GetTypeInfo(throwStatement.Expression);
-            return IsNotImplementedException(typeInfo.ConvertedType);
-        }
-
-        private static bool IsNotImplementedException(ITypeSymbol typeSymbol)
-        {
-            if (typeSymbol == null)
-                return false;
-            if (typeSymbol.Name == "NotImplementedException")
+            if (statementSyntax is ThrowStatementSyntax)
                 return true;
-            return IsNotImplementedException(typeSymbol.BaseType);
+
+            if (statementSyntax is BlockSyntax blockSyntax)
+                return blockSyntax.Statements.Any(IsStatementThrowsException);
+
+            return false;
         }
 
         private static SwitchSectionSyntax GetDefaultExpression(SyntaxList<SwitchSectionSyntax> caseSyntaxes)
