@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -11,15 +10,8 @@ namespace SwitchAnalyzer
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class SwitchAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "SA001";
-        private const string Title = "Non exhaustive patterns in switch block";
-        private const string MessageFormat = "Switch case should check enum value(s): {0}";
-        private const string Description = "All enum cases in switch statement should be checked.";
-        private const string Category = "Correctness";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: Description);
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(EnumAnalyzer.Rule, InterfaceAnalyzer.Rule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -28,9 +20,9 @@ namespace SwitchAnalyzer
 
         private static void Action(CodeBlockAnalysisContext context)
         {
-            var blockSyntaxes = GetBlockSyntaxes(context.CodeBlock);
+            var blockSyntaxes = context.CodeBlock.ChildNodes().OfType<BlockSyntax>(); ;
 
-            var switchStatements = blockSyntaxes.SelectMany(GetSwitchesFromBlock);
+            var switchStatements = blockSyntaxes.SelectMany(x => x.Statements.OfType<SwitchStatementSyntax>());
 
             foreach (var switchStatement in switchStatements)
             {
@@ -45,147 +37,49 @@ namespace SwitchAnalyzer
             var expressionType = typeInfo.ConvertedType;
             if (expressionType.TypeKind == TypeKind.Enum)
             {
-                var switchCases = switchStatement.Sections;
-                var defaultMember = GetDefaultExpression(switchCases);
-                var shouldProcessWithDefault = ShouldProcessWithDefault(defaultMember);
+                var switchCases = switchStatement.Sections;;
+                var shouldProcessWithDefault = EnumAnalyzer.ShouldProceedWithChecks(switchCases);
                 if (shouldProcessWithDefault)
                 {
-                    var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field);
-                    var enumNames = enumSymbols.Select(GetEnumValueName).ToList();
-                   
-                    var caseExpressions = GetCaseExpressions(switchCases);
-                    var allCaseMembers = GetMemeberAccessExpressionSyntaxes(caseExpressions).ToList();
-                    var identifiersWithNames = allCaseMembers
-                        .Select(GetIdentifierAndName)
-                        .Where(x => x.identifier != null && x.name != null);
+                    var allImplementations = EnumAnalyzer.AllEnumValues(expressionType);
+                    var caseImplementations = EnumAnalyzer.CaseIdentifiers(switchCases);
 
-                    var expressionTypeEnumName = expressionType.Name;
-                    var notCheckedValues = enumNames
-                        .Where(enumValue => identifiersWithNames
-                            .All(enumInCase => enumInCase.name != enumValue 
-                                               || enumInCase.identifier != expressionTypeEnumName))
+                    var notCheckedValues = allImplementations
+                        .Where(enumValue => caseImplementations
+                            .All(enumInCase => enumInCase != enumValue))
+                            .OrderBy(x => x)
                             .ToList();
                     if (notCheckedValues.Any())
                     {
-                        var notCoveredEnumTexts = notCheckedValues.Select(caseName => $"{expressionTypeEnumName}.{caseName}");
-                        var diagnostic = Diagnostic.Create(Rule, switchStatement.GetLocation(), string.Join(", ", notCoveredEnumTexts));
+                        var notCoveredEnumTexts = notCheckedValues.Select(caseName => $"{caseName}");
+                        var diagnostic = Diagnostic.Create(EnumAnalyzer.Rule, switchStatement.GetLocation(), string.Join(", ", notCoveredEnumTexts));
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
-        }
 
-        private static (string identifier, string name) GetIdentifierAndName(MemberAccessExpressionSyntax syntax)
-        {
-            var simpleAccess = syntax.ChildNodes().ToList();
-
-            var enumValue = simpleAccess.LastOrDefault() as IdentifierNameSyntax;
-            if (simpleAccess.FirstOrDefault() is IdentifierNameSyntax enumType && enumValue != null)
+            if (expressionType.TypeKind == TypeKind.Interface)
             {
-                return (enumType.Identifier.Value.ToString(), enumValue.Identifier.Value.ToString());
+                var switchCases = switchStatement.Sections;
+                var shouldProcessWithDefault = InterfaceAnalyzer.ShouldProceedWithChecks(switchCases);
+                if (shouldProcessWithDefault)
+                {
+                    var allImplementations = InterfaceAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                    var caseImplementations = InterfaceAnalyzer.GetCaseValues(switchCases);
+
+                    var notCheckedValues = allImplementations
+                        .Where(enumValue => caseImplementations
+                            .All(enumInCase => enumInCase != enumValue))
+                        .OrderBy(x => x)
+                        .ToList();
+                    if (notCheckedValues.Any())
+                    {
+                        var notCoveredEnumTexts = notCheckedValues.Select(caseName => $"{caseName}");
+                        var diagnostic = Diagnostic.Create(InterfaceAnalyzer.Rule, switchStatement.GetLocation(), string.Join(", ", notCoveredEnumTexts));
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                }
             }
-            return (null, null);
-        }
-
-        private static bool ShouldProcessWithDefault(SwitchSectionSyntax defaultSection)
-        {
-            if (defaultSection == null)
-                return true;
-
-            var statements = defaultSection.Statements;
-
-            return statements.Any(IsStatementThrowsException);
-        }
-
-        private static bool IsStatementThrowsException(StatementSyntax statementSyntax)
-        {
-            if (statementSyntax is ThrowStatementSyntax)
-                return true;
-
-            if (statementSyntax is BlockSyntax blockSyntax)
-                return blockSyntax.Statements.Any(IsStatementThrowsException);
-
-            return false;
-        }
-
-        private static SwitchSectionSyntax GetDefaultExpression(SyntaxList<SwitchSectionSyntax> caseSyntaxes)
-        {
-            return caseSyntaxes.FirstOrDefault(x => x.Labels.FirstOrDefault() is DefaultSwitchLabelSyntax);
-        }
-
-        private static IEnumerable<MemberAccessExpressionSyntax> GetMemeberAccessExpressionSyntaxes(IEnumerable<ExpressionSyntax> expressions)
-        {
-            return expressions.SelectMany(GetExpressions);
-
-            IEnumerable<MemberAccessExpressionSyntax> GetExpressions(ExpressionSyntax expression)
-            {
-                if (expression is MemberAccessExpressionSyntax member)
-                {
-                    return new[] { member };
-                }
-                if (expression is ParenthesizedExpressionSyntax parenthesized)
-                {
-                    return GetExpressions(parenthesized.Expression);
-                }
-                if (expression is BinaryExpressionSyntax binaryExpression)
-                {
-                    if (binaryExpression.Kind() == SyntaxKind.BitwiseAndExpression)
-                    {
-                        var left = GetExpressions(binaryExpression.Left).ToList();
-                        var right = GetExpressions(binaryExpression.Right).ToList();
-                        if (AreExpressionListsEqual(left, right))
-                        {
-                            return left;
-                        }
-                        else
-                        {
-                            return new MemberAccessExpressionSyntax[0];
-                        }
-                    }
-                    if (binaryExpression.Kind() == SyntaxKind.BitwiseOrExpression)
-                    {
-                        var left = GetExpressions(binaryExpression.Left);
-                        var right = GetExpressions(binaryExpression.Right);
-                        return left.Union(right);
-                    }
-                }
-                return new MemberAccessExpressionSyntax[0];
-            } 
-        }
-
-        private static bool AreExpressionListsEqual(IList<MemberAccessExpressionSyntax> left, IList<MemberAccessExpressionSyntax> right)
-        {
-            var leftHasRightElements = left.All(l => right.Any(r => AreMemberAccessExpressionsEqual(l, r)));
-            var rightHasLeftElements = right.All(r => left.Any(l => AreMemberAccessExpressionsEqual(l, r)));
-
-            return leftHasRightElements && rightHasLeftElements;
-        }
-
-        private static bool AreMemberAccessExpressionsEqual(MemberAccessExpressionSyntax left, MemberAccessExpressionSyntax right)
-        {
-            var leftIdentifier = GetIdentifierAndName(left);
-            var rightIdentifier = GetIdentifierAndName(right);
-            return $"{leftIdentifier.identifier}.{leftIdentifier.name}" == $"{rightIdentifier.identifier}.{rightIdentifier.name}";
-        }
-        
-        private static IEnumerable<ExpressionSyntax> GetCaseExpressions(IEnumerable<SwitchSectionSyntax> caseSyntaxes)
-        {
-            var caseSwitchSyntaxes = caseSyntaxes.Where(x => x.Labels.FirstOrDefault() is CaseSwitchLabelSyntax);
-            var caseLabels = caseSwitchSyntaxes.Select(x => x.Labels.FirstOrDefault()).OfType<CaseSwitchLabelSyntax>();
-            var caseExpressions = caseLabels.Select(x => x.Value);
-            return caseExpressions;
-        }
-
-        private static string GetEnumValueName(ISymbol symbol) => symbol.Name;
-
-        private static IEnumerable<SwitchStatementSyntax> GetSwitchesFromBlock(BlockSyntax block)
-        {
-            return block.Statements.OfType<SwitchStatementSyntax>();
-        }
-
-        private static IEnumerable<BlockSyntax> GetBlockSyntaxes(SyntaxNode node)
-        {
-            return node.ChildNodes().OfType<BlockSyntax>();
         }
     }
 }
