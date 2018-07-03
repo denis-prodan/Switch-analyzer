@@ -14,7 +14,14 @@ namespace SwitchAnalyzer
         private const string EnumTitle = "Non exhaustive patterns in switch block";
         private const string EnumMessageFormat = "Switch case should check enum value(s): {0}";
         private const string EnumDescription = "All enum cases in switch statement should be checked.";
-        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(EnumDiagnosticId, EnumTitle, EnumMessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: EnumDescription);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+            id: EnumDiagnosticId, 
+            title: EnumTitle, 
+            messageFormat: EnumMessageFormat, 
+            category: Category, 
+            defaultSeverity: DiagnosticSeverity.Warning, 
+            isEnabledByDefault: true,
+            description: EnumDescription);
 
         public static IEnumerable<string> AllEnumValues(ITypeSymbol expressionType)
         {

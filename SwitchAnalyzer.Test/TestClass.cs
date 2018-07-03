@@ -11,6 +11,8 @@ namespace SwitchAnalyzer.Test
 
     class TestClass : TestClass.ITestInterface
     {
+        public string Foo { get; set; }
+
         public void TestMethod1()
         {
             var s = TestEnum.Case1;
@@ -37,13 +39,26 @@ namespace SwitchAnalyzer.Test
 
         public TestEnum TestMethod3()
         {
-            ITestInterface s = new TestClass();
+            var s = new TestClass();
 
             switch (s)
             {
-                case TestClass a: return TestEnum.Case1;
+                case TestClass a when a.Foo == "Test" && a.Foo == "Zoo": return TestEnum.Case1;
                 case var inter: return TestEnum.Case2;
                 //default: { break; }
+            }
+        }
+
+        public TestEnum TestMethod4()
+        {
+            BaseClass s = new TestClass2();
+
+            switch (s)
+            {
+                case TestClass2 a when a.Foo == "Test" && a.Bar == 1: return TestEnum.Case1;
+                case TestClass3 b when b.Foo == "Test" && b.Baz == 0.1: return TestEnum.Case2;
+                case BaseClass b: return TestEnum.Case3;
+                case var inter: return TestEnum.Case3;
             }
         }
         public interface ITestInterface

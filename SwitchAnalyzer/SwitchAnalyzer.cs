@@ -13,7 +13,7 @@ namespace SwitchAnalyzer
     public class SwitchAnalyzer : DiagnosticAnalyzer
     {
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(EnumAnalyzer.Rule, InterfaceAnalyzer.Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(EnumAnalyzer.Rule, InterfaceAnalyzer.Rule, ClassAnalyzer.Rule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -52,9 +52,18 @@ namespace SwitchAnalyzer
             {
                 bool ShouldProceed() => InterfaceAnalyzer.ShouldProceedWithChecks(switchCases);
                 IEnumerable<string> AllImplementations() => InterfaceAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
-                IEnumerable<string> CaseImplementations() => InterfaceAnalyzer.GetCaseValues(switchCases);
+                IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, InterfaceAnalyzer.Rule);
+            }
+
+            if (expressionType.TypeKind == TypeKind.Class)
+            {
+                bool ShouldProceed() => ClassAnalyzer.ShouldProceedWithChecks(switchCases, expressionType.Name);
+                IEnumerable<string> AllImplementations() => ClassAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
+
+                ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, ClassAnalyzer.Rule);
             }
 
             void ProcessSwitch(Func<bool> shouldProceedFunc,
