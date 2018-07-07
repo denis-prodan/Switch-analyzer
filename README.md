@@ -31,7 +31,7 @@ At this moment analyzer should support common cases:
 * Parentnesis.
 * Function call as switch argument.
 
-New version has support for Interface implementations checks in switch-case with pattern matching. 
+New version has support for Interface implementations and base class inheritors checks in switch-case with pattern matching. 
 Also, treats "var" case as intended behavior and performs no checks in case if it is present.
 
 You can find more cases in unit tests
