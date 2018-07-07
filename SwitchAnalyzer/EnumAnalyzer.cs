@@ -105,7 +105,7 @@ namespace SwitchAnalyzer
         private static IEnumerable<ExpressionSyntax> GetCaseExpressions(IEnumerable<SwitchSectionSyntax> caseSyntaxes)
         {
             var caseSwitchSyntaxes = caseSyntaxes.Where(x => x.Labels.FirstOrDefault() is CaseSwitchLabelSyntax);
-            var caseLabels = caseSwitchSyntaxes.Select(x => x.Labels.FirstOrDefault()).OfType<CaseSwitchLabelSyntax>();
+            var caseLabels = caseSwitchSyntaxes.SelectMany(x => x.Labels).OfType<CaseSwitchLabelSyntax>();
             var caseExpressions = caseLabels.Select(x => x.Value);
             return caseExpressions;
         }

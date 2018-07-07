@@ -126,6 +126,25 @@ namespace SwitchAnalyzer.Test
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestClass3", "TestClass4"));
         }
 
+        [TestMethod]
+        public void EmptyExpressionValid()
+        {
+            var switchStatement = @"
+            BaseClass test = new TestClass2();
+            switch (test)
+            {
+                case TestClass2 a: return TestEnum.Case1;
+                case TestClass3 a:
+                case TestClass4 a: return TestEnum.Case3;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
         private DiagnosticResult GetDiagnostic(params string[] expectedTypes)
         {
             return new DiagnosticResult

@@ -161,6 +161,24 @@ namespace SwitchAnalyzer.Test
             VerifyCSharpDiagnostic(test, GetDiagnostic("OneMoreInheritor"));
         }
 
+        [TestMethod]
+        public void EmptyExpressionValid()
+        {
+            var switchStatement = @"
+            ITestInterface test = new TestClass();
+            switch (test)
+            {
+                case TestClass a:
+                case OneMoreInheritor a: return TestEnum.Case2;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
         private DiagnosticResult GetDiagnostic(params string[] expectedTypes)
         {
             return new DiagnosticResult

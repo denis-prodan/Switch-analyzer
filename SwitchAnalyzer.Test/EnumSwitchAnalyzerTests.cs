@@ -250,6 +250,24 @@ namespace SwitchAnalyzer.Test
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case2", "TestEnum.Case3"));
         }
 
+        [TestMethod]
+        public void EmptyExpressionValid()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+                case TestEnum.Case1: return TestEnum.Case1;
+                case TestEnum.Case2:
+                case TestEnum.Case3: return TestEnum.Case3;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
         private DiagnosticResult GetDiagnostic(params string[] expectedEnums)
         {
             return new DiagnosticResult

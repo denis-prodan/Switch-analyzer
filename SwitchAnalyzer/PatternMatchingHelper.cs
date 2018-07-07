@@ -19,7 +19,7 @@ namespace SwitchAnalyzer
         private static IEnumerable<DeclarationPatternSyntax> GetCaseDeclarationPatternSyntaxes(IEnumerable<SwitchSectionSyntax> caseSyntaxes)
         {
             var caseSwitchSyntaxes = caseSyntaxes.Where(x => x.Labels.FirstOrDefault() is CasePatternSwitchLabelSyntax);
-            var caseLabels = caseSwitchSyntaxes.Select(x => x.Labels.FirstOrDefault()).OfType<CasePatternSwitchLabelSyntax>();
+            var caseLabels = caseSwitchSyntaxes.SelectMany(x => x.Labels).OfType<CasePatternSwitchLabelSyntax>();
             var caseExpressions = caseLabels.Select(x => x.Pattern).OfType<DeclarationPatternSyntax>();
             return caseExpressions;
         }
