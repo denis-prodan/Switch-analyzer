@@ -32,7 +32,7 @@ namespace SwitchAnalyzer
             return DefaultCaseCheck.ShouldProceedWithDefault(caseSyntaxes);
         }
 
-        public static IEnumerable<string> GetAllImplementationNames(
+        public static IEnumerable<SwitchArgumentTypeItem<string>> GetAllImplementationNames(
             SwitchStatementSyntax switchStatement,
             ITypeSymbol interfaceType,
             SemanticModel semanticModel)
@@ -40,7 +40,7 @@ namespace SwitchAnalyzer
             var allSymbols = semanticModel.LookupSymbols(switchStatement.GetLocation().SourceSpan.Start);
             var namedTypeSymbols = allSymbols.Where(x => x.Kind == SymbolKind.NamedType).OfType<INamedTypeSymbol>();
             var implementations = namedTypeSymbols.Where(namedType => namedType.AllInterfaces.Any(x => x.Name == interfaceType.Name));
-            return implementations.Select(x => x.Name);
+            return implementations.Select(x => new SwitchArgumentTypeItem<string>(x.Name, x.Name));
         }
     }
 }

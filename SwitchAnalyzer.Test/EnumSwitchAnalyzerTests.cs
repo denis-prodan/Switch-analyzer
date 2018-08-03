@@ -45,6 +45,12 @@ namespace SwitchAnalyzer.Test
                 return enumValue;
             }
         }
+    enum EnumWithDuplicates
+    {
+        Case1 = 1,
+        Case2 = 2,
+        DuplicateCase = 1
+    }
     }";
 
         //No diagnostics expected to show up
@@ -267,6 +273,24 @@ namespace SwitchAnalyzer.Test
 
             VerifyCSharpDiagnostic(test);
         }
+
+        [TestMethod]
+        public void DuplicateCasesAreNotCheckedTwice()
+        {
+            var switchStatement = @"
+            switch (EnumWithDuplicates.Case1)
+            {
+                case EnumWithDuplicates.Case1: return TestEnum.Case1;
+                case EnumWithDuplicates.Case2: return TestEnum.Case2:
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
 
         private DiagnosticResult GetDiagnostic(params string[] expectedEnums)
         {
