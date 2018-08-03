@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SwitchAnalyzer
 {
-    class EnumAnalyzer
+    partial class EnumAnalyzer
     {
         private const string Category = "Correctness";
 
@@ -23,11 +23,11 @@ namespace SwitchAnalyzer
             isEnabledByDefault: true,
             description: EnumDescription);
 
-        public static IEnumerable<string> AllEnumValues(ITypeSymbol expressionType)
+        public static IEnumerable<SwitchArgumentTypeItem<int>> AllEnumValues(ITypeSymbol expressionType)
         {
             var expressionTypeEnumName = expressionType.Name;
-            var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field);
-            var allEnumValues = enumSymbols.Select(x => $"{expressionTypeEnumName}.{x.Name}").ToList();
+            var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field).OfType<IFieldSymbol>();
+            var allEnumValues = enumSymbols.Select(x => new SwitchArgumentTypeItem<int>($"{expressionTypeEnumName}.{x.Name}", (int) x.ConstantValue));
             return allEnumValues;
         }
 
@@ -115,6 +115,7 @@ namespace SwitchAnalyzer
             var simpleAccess = syntax.ChildNodes().ToList();
 
             var enumValue = simpleAccess.LastOrDefault() as IdentifierNameSyntax;
+
             if (simpleAccess.FirstOrDefault() is IdentifierNameSyntax enumType && enumValue != null)
             {
                 return (enumType.Identifier.Value.ToString(), enumValue.Identifier.Value.ToString());

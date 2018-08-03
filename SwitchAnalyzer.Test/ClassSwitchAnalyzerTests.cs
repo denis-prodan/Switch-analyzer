@@ -53,6 +53,9 @@ namespace SwitchAnalyzer.Test
     {
         public double Baz { get; set; }
     }
+    abstract class AbstractClass: BaseClass
+    {
+    }
     }";
 
         [TestMethod]

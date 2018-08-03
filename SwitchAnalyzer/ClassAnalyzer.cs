@@ -47,15 +47,18 @@ namespace SwitchAnalyzer
             return PatternMatchingHelper.GetCaseValues(caseSyntaxes).Any(x => x == className); 
         }
 
-        public static IEnumerable<string> GetAllImplementationNames(
+        public static IEnumerable<SwitchArgumentTypeItem<string>> GetAllImplementationNames(
             SwitchStatementSyntax switchStatement,
             ITypeSymbol className,
             SemanticModel semanticModel)
         {
             var allSymbols = semanticModel.LookupSymbols(switchStatement.GetLocation().SourceSpan.Start);
             var namedTypeSymbols = allSymbols.Where(x => x.Kind == SymbolKind.NamedType).OfType<INamedTypeSymbol>();
-            var implementations = namedTypeSymbols.Where(namedType => namedType.BaseType?.Name == className.Name);
-            return implementations.Select(x => x.Name);
+            var implementations = namedTypeSymbols
+                .Where(namedType => namedType.BaseType?.Name == className.Name 
+                                    && !namedType.IsAbstract);
+            // todo: Decide what to do with inheritors of abstract class that is inheritor of base class.
+            return implementations.Select(x => new SwitchArgumentTypeItem<string>(x.Name, x.Name));
         }
     }
 }

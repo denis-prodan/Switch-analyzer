@@ -42,7 +42,7 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Enum)
             {
                 bool ShouldProceed() => EnumAnalyzer.ShouldProceedWithChecks(switchCases);
-                IEnumerable<string> AllImplementations() => EnumAnalyzer.AllEnumValues(expressionType);
+                IEnumerable<SwitchArgumentTypeItem<int>> AllImplementations() => EnumAnalyzer.AllEnumValues(expressionType);
                 IEnumerable<string> CaseImplementations() => EnumAnalyzer.CaseIdentifiers(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
@@ -51,7 +51,7 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Interface)
             {
                 bool ShouldProceed() => InterfaceAnalyzer.ShouldProceedWithChecks(switchCases);
-                IEnumerable<string> AllImplementations() => InterfaceAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => InterfaceAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
                 IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, InterfaceAnalyzer.Rule);
@@ -60,31 +60,31 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Class)
             {
                 bool ShouldProceed() => ClassAnalyzer.ShouldProceedWithChecks(switchCases, expressionType.Name);
-                IEnumerable<string> AllImplementations() => ClassAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => ClassAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
                 IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, ClassAnalyzer.Rule);
             }
 
-            void ProcessSwitch(Func<bool> shouldProceedFunc,
-                Func<IEnumerable<string>> allImplementationsFunc,
+            void ProcessSwitch<T>(Func<bool> shouldProceedFunc,
+                Func<IEnumerable<SwitchArgumentTypeItem<T>>> allImplementationsFunc,
                 Func<IEnumerable<string>> caseImplementationFunc,
-                DiagnosticDescriptor rule) => ProcessSwitchCases(
+                DiagnosticDescriptor rule) where T: IComparable => ProcessSwitchCases(
                 shouldProceedFunc: shouldProceedFunc,
-                allImplementationsFunc: allImplementationsFunc, 
+                allImplementationsFunc: allImplementationsFunc,
                 caseImplementationFunc: caseImplementationFunc,
-                rule: rule, 
+                rule: rule,
                 location: switchStatement.GetLocation(),
                 context: context);
         }
 
-        private static void ProcessSwitchCases(
+        private static void ProcessSwitchCases<T>(
             Func<bool> shouldProceedFunc, 
-            Func<IEnumerable<string>> allImplementationsFunc,
+            Func<IEnumerable<SwitchArgumentTypeItem<T>>> allImplementationsFunc,
             Func<IEnumerable<string>> caseImplementationFunc,
             DiagnosticDescriptor rule,
             Location location,
-            CodeBlockAnalysisContext context)
+            CodeBlockAnalysisContext context) where T: IComparable
         {
             if (shouldProceedFunc == null
                 || allImplementationsFunc == null
@@ -95,18 +95,23 @@ namespace SwitchAnalyzer
             if (!shouldProceedFunc.Invoke())
                 return;
 
-            var allImplementations = allImplementationsFunc.Invoke();
+            var allImplementations = allImplementationsFunc.Invoke().ToList();
             var caseImplementations = caseImplementationFunc.Invoke();
 
-            var notCheckedValues = allImplementations
+            var checkedValues = allImplementations
                 .Where(expectedValue => caseImplementations
-                    .All(enumInCase => enumInCase != expectedValue))
-                .OrderBy(x => x)
+                    .Any(caseValue => caseValue == expectedValue.Name))
                 .ToList();
+
+            var notCheckedValues = allImplementations.Where(x =>
+                checkedValues.All(checkedVal => !checkedVal.Value.Equals(x.Value)))
+                .OrderBy(x => x.Name)
+                .ToList();
+
             if (notCheckedValues.Any())
             {
-                var notCoveredEnumTexts = notCheckedValues.Select(caseName => $"{caseName}");
-                var diagnostic = Diagnostic.Create(rule, location, string.Join(", ", notCoveredEnumTexts));
+                var notCoveredValues = notCheckedValues.Select(caseName => caseName.Name);
+                var diagnostic = Diagnostic.Create(rule, location, string.Join(", ", notCoveredValues));
                 context.ReportDiagnostic(diagnostic);
             }
         }

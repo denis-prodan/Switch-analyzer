@@ -11,6 +11,12 @@ namespace SwitchAnalyzer.Test
 
     class TestClass : TestClass.ITestInterface
     {
+
+        public TestClass(string foo)
+        {
+            Foo = foo;
+        }
+        
         public string Foo { get; set; }
 
         public void TestMethod1()
@@ -39,7 +45,7 @@ namespace SwitchAnalyzer.Test
 
         public TestEnum TestMethod3()
         {
-            var s = new TestClass();
+            var s = new TestClass("");
 
             switch (s)
             {
