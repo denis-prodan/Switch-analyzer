@@ -44,6 +44,9 @@ namespace SwitchAnalyzer.Test
             public class OneMoreInheritor : ITestInterface
             {
             }
+           public interface IChildInterface: ITestInterface
+            {
+            }
             private TestEnum GetEnum(TestEnum enumValue)
             {
                 return enumValue;
@@ -60,6 +63,7 @@ namespace SwitchAnalyzer.Test
             {
                 case TestClass a: return TestEnum.Case1;
                 case OneMoreInheritor a: return TestEnum.Case2;
+                case IChildInterface i: return TestEnum.Case3;
                 default: throw new NotImplementedException();
             }";
             var test = $@"{codeStart}
@@ -83,7 +87,7 @@ namespace SwitchAnalyzer.Test
                           {switchStatement}
                           {codeEnd}";
 
-            VerifyCSharpDiagnostic(test, GetDiagnostic("OneMoreInheritor"));
+            VerifyCSharpDiagnostic(test, GetDiagnostic("IChildInterface", "OneMoreInheritor"));
         }
 
         [TestMethod]
@@ -94,6 +98,7 @@ namespace SwitchAnalyzer.Test
             switch (test)
             {
                 case TestClass a: return TestEnum.Case1;
+                case IChildInterface i: return TestEnum.Case2;
                 default: default:{
                         var s = GetEnum(testValue);
                         throw new NotImplementedException();
@@ -142,7 +147,7 @@ namespace SwitchAnalyzer.Test
                           {switchStatement}
                           {codeEnd}";
 
-            VerifyCSharpDiagnostic(test, GetDiagnostic("OneMoreInheritor", "TestClass"));
+            VerifyCSharpDiagnostic(test, GetDiagnostic("IChildInterface", "OneMoreInheritor", "TestClass"));
         }
 
         [TestMethod]
@@ -153,6 +158,7 @@ namespace SwitchAnalyzer.Test
             switch (new TestClass() as ITestInterface)
             {
                 case TestClass a: return TestEnum.Case1;
+                case IChildInterface i: return TestEnum.Case2;
                 default: throw new NotImplementedException();
             }";
             var test = $@"{codeStart}
@@ -171,6 +177,7 @@ namespace SwitchAnalyzer.Test
             {
                 case TestClass a:
                 case OneMoreInheritor a: return TestEnum.Case2;
+                case IChildInterface i:
                 default: throw new NotImplementedException();
             }";
             var test = $@"{codeStart}
@@ -188,6 +195,7 @@ namespace SwitchAnalyzer.Test
             switch (test)
             {
                 case TestClass a: return TestEnum.Case2;
+                case IChildInterface i: return TestEnum.Case1;
                 default: throw new NotImplementedException();
             }";
             var test = $@"{codeStart}
@@ -202,7 +210,41 @@ namespace SwitchAnalyzer.Test
             switch (test)
             {
                 case TestClass a: return TestEnum.Case2;
+                case IChildInterface i: return TestEnum.Case1;
                 case OneMoreInheritor o:
+                default: throw new NotImplementedException();
+            }";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixInterface()
+        {
+            var switchStatement = @"
+            ITestInterface test = new TestClass();
+            switch (test)
+            {
+                case TestClass a: return TestEnum.Case2;
+                case OneMoreInheritor o: return TestEnum.Case1;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("IChildInterface"));
+
+            var expectedFixSwitch = @"
+            ITestInterface test = new TestClass();
+            switch (test)
+            {
+                case TestClass a: return TestEnum.Case2;
+                case OneMoreInheritor o: return TestEnum.Case1;
+                case IChildInterface i:
                 default: throw new NotImplementedException();
             }";
             var expectedResult = $@"{codeStart}

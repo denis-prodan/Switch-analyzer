@@ -46,11 +46,25 @@ namespace SwitchAnalyzer.Test
                 return enumValue;
             }
         }
+    enum ByteEnum: byte
+    {
+        Case1 = 1,
+        Case2 = 2
+    }
     enum EnumWithDuplicates
     {
         Case1 = 1,
         Case2 = 2,
         DuplicateCase = 1
+    }
+    }
+namespace OtherNamespace
+    {
+        enum OtherEnum
+    {
+        Case1,
+        Case2,
+        Case3
     }
     }";
 
@@ -79,6 +93,41 @@ namespace SwitchAnalyzer.Test
                           {codeEnd}";
 
             VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void ValidWithNamespace()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+                case ConsoleApplication1.TestEnum.Case1: return TestEnum.Case1;
+                case ConsoleApplication1.TestEnum.Case2: return TestEnum.Case2;
+                case ConsoleApplication1.TestEnum.Case3: return TestEnum.Case3;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void SimpleWithNamespace()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+                case ConsoleApplication1.TestEnum.Case1: return TestEnum.Case1;
+                case ConsoleApplication1.TestEnum.Case2: return TestEnum.Case2;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case3"));
         }
 
         [TestMethod]
@@ -406,6 +455,36 @@ namespace SwitchAnalyzer.Test
                     }
             }
             return TestEnum.Case1;";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixWithNamespace()
+        {
+            var switchStatement = @"
+            switch (OtherNamespace.OtherEnum.Case1)
+            {
+                case OtherNamespace.OtherEnum.Case1: return TestEnum.Case1;
+                case OtherNamespace.OtherEnum.Case2: return TestEnum.Case2;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("OtherNamespace.OtherEnum.Case3"));
+
+            var expectedFixSwitch = @"
+            switch (OtherNamespace.OtherEnum.Case1)
+            {
+                case OtherNamespace.OtherEnum.Case1: return TestEnum.Case1;
+                case OtherNamespace.OtherEnum.Case2: return TestEnum.Case2;
+                case OtherNamespace.OtherEnum.Case3:
+                default: throw new NotImplementedException();
+            }";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
                           {codeEnd}";

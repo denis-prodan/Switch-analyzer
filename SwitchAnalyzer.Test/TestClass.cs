@@ -1,5 +1,15 @@
 ﻿using System;
 
+
+namespace SwitchAnalyzer.OtherNamespace
+{
+    enum OtherEnum
+    {
+        Case1,
+        Case2,
+        Case3
+    }
+}
 namespace SwitchAnalyzer.Test
 {
     enum TestEnum
@@ -21,11 +31,11 @@ namespace SwitchAnalyzer.Test
 
         public void TestMethod1()
         {
-            var s = TestEnum.Case1;
+            var s = OtherNamespace.OtherEnum.Case1;
 
             switch (s)
             {
-                case TestEnum.Case2: { break; }
+                case OtherNamespace.OtherEnum.Case2: { break; }
             }
         }
 
@@ -35,8 +45,8 @@ namespace SwitchAnalyzer.Test
 
             switch (GetEnum(s))
             {
-                case TestEnum.Case1 & TestEnum.Case1: { break; }
-                case TestEnum.Case2: { break; }
+                case Test.TestEnum.Case1 & TestEnum.Case1: { break; }
+                case Test.TestEnum.Case2: { break; }
                 default: { break; }
             }
 
