@@ -2,13 +2,19 @@
 {
     internal class SwitchArgumentTypeItem<T>
     {
-        public SwitchArgumentTypeItem(string name, T value)
+        public SwitchArgumentTypeItem(string prefix, string member, string fullName, T value)
         {
-            Name = name;
+            Prefix = prefix;
+            FullName = fullName;
             Value = value;
+            Member = member;
         }
 
-        public string Name { get; }
+        public string Prefix { get; }
+
+        public string Member { get; }
+
+        public string FullName { get; }
 
         public T Value { get; set; }
     }

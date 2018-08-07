@@ -27,7 +27,11 @@ namespace SwitchAnalyzer
         {
             var expressionTypeEnumName = expressionType.Name;
             var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field).OfType<IFieldSymbol>();
-            var allEnumValues = enumSymbols.Select(x => new SwitchArgumentTypeItem<int>($"{expressionTypeEnumName}.{x.Name}", (int) x.ConstantValue));
+            var allEnumValues = enumSymbols.Select(x => new SwitchArgumentTypeItem<int>(
+                prefix: x.ContainingNamespace.Name,
+                member: expressionTypeEnumName,
+                fullName: $"{expressionTypeEnumName}.{x.Name}", 
+                value: (int) x.ConstantValue));
             return allEnumValues;
         }
 
@@ -43,7 +47,8 @@ namespace SwitchAnalyzer
             var caseIdentifiers = allCaseMembers
                 .Select(GetIdentifierAndName)
                 .Where(x => x.identifier != null && x.name != null)
-                .Select(x => $"{x.identifier}.{x.name}");
+                .Select(x => $"{x.identifier}.{x.name}")
+                .ToList();
             return caseIdentifiers;
         }
 
@@ -119,6 +124,11 @@ namespace SwitchAnalyzer
             if (simpleAccess.FirstOrDefault() is IdentifierNameSyntax enumType && enumValue != null)
             {
                 return (enumType.Identifier.Value.ToString(), enumValue.Identifier.Value.ToString());
+            }
+
+            if (simpleAccess.FirstOrDefault() is MemberAccessExpressionSyntax member && enumValue != null)
+            {
+                return (member.Name.Identifier.Value.ToString(), enumValue.Identifier.Value.ToString());
             }
             return (null, null);
         }

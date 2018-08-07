@@ -109,6 +109,22 @@ namespace SwitchAnalyzer
             var parts = caseName.Split('.');
 
             var colonToken = Token(SyntaxKind.ColonToken);
+
+            // Namespace or other prefix
+            if (parts.Length == 3)
+            {
+                var identifier =
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName(parts[0]),
+                            IdentifierName(parts[1])),
+                        IdentifierName(parts[2]));
+                return CaseSwitchLabel(identifier, colonToken);
+            }
+
+            // Enum value (enum + case)
             if (parts.Length == 2)
             {
                 var identifier = 
@@ -118,6 +134,7 @@ namespace SwitchAnalyzer
                 return CaseSwitchLabel(identifier, colonToken);
             }
 
+            // Class/interface implementation
             if (parts.Length == 1)
             {
                 var identifier = Identifier(caseName[0].ToString().ToLower());

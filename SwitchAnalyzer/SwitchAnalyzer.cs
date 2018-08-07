@@ -38,6 +38,7 @@ namespace SwitchAnalyzer
             var typeInfo = context.SemanticModel.GetTypeInfo(expression);
             var expressionType = typeInfo.ConvertedType;
             var switchCases = switchStatement.Sections;
+            var switchLocationStart = switchStatement.GetLocation().SourceSpan.Start;
 
             if (expressionType.TypeKind == TypeKind.Enum)
             {
@@ -51,7 +52,7 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Interface)
             {
                 bool ShouldProceed() => InterfaceAnalyzer.ShouldProceedWithChecks(switchCases);
-                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => InterfaceAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => InterfaceAnalyzer.GetAllImplementationNames(switchLocationStart, expressionType, context.SemanticModel);
                 IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, InterfaceAnalyzer.Rule);
@@ -60,7 +61,7 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Class)
             {
                 bool ShouldProceed() => ClassAnalyzer.ShouldProceedWithChecks(switchCases, expressionType.Name);
-                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => ClassAnalyzer.GetAllImplementationNames(switchStatement, expressionType, context.SemanticModel);
+                IEnumerable<SwitchArgumentTypeItem<string>> AllImplementations() => ClassAnalyzer.GetAllImplementationNames(switchLocationStart, expressionType, context.SemanticModel);
                 IEnumerable<string> CaseImplementations() => PatternMatchingHelper.GetCaseValues(switchCases);
 
                 ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, ClassAnalyzer.Rule);
@@ -75,7 +76,8 @@ namespace SwitchAnalyzer
                 caseImplementationFunc: caseImplementationFunc,
                 rule: rule,
                 location: switchStatement.GetLocation(),
-                context: context);
+                context: context,
+                switchStatementLocation: switchLocationStart);
         }
 
         private static void ProcessSwitchCases<T>(
@@ -84,7 +86,8 @@ namespace SwitchAnalyzer
             Func<IEnumerable<string>> caseImplementationFunc,
             DiagnosticDescriptor rule,
             Location location,
-            CodeBlockAnalysisContext context) where T: IComparable
+            CodeBlockAnalysisContext context,
+            int switchStatementLocation) where T: IComparable
         {
             if (shouldProceedFunc == null
                 || allImplementationsFunc == null
@@ -101,20 +104,29 @@ namespace SwitchAnalyzer
             var caseImplementations = caseImplementationFunc().ToDictionary(x => x, _ => obj);
 
             var checkedValues = allImplementations
-                .Where(expectedValue => caseImplementations.ContainsKey(expectedValue.Name))
+                .Where(expectedValue => caseImplementations.ContainsKey(expectedValue.FullName))
                 .ToDictionary(x => x.Value, x => obj);
 
             var notCheckedValues = allImplementations.Where(x =>
                 !checkedValues.ContainsKey(x.Value))
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.FullName)
                 .ToList();
 
             if (notCheckedValues.Any())
             {
-                var notCoveredValues = notCheckedValues.Select(caseName => caseName.Name);
+                var typeName = notCheckedValues.First().Member;
+                var symbols = context.SemanticModel.LookupSymbols(switchStatementLocation);
+                var shouldAddNamespace = !symbols.Any(x => x.Name == typeName);
+
+                var notCoveredValues = notCheckedValues.Select(caseName =>
+                    BuildName(shouldAddNamespace, caseName.Prefix, caseName.FullName));
                 var diagnostic = Diagnostic.Create(rule, location, string.Join(", ", notCoveredValues));
                 context.ReportDiagnostic(diagnostic);
             }
+
+            string BuildName(bool shouldAddPrefix, string prefix, string fullName) => shouldAddPrefix ? $"{prefix}.{fullName}" : fullName;
         }
     }
+
+
 }
