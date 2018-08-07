@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using Microsoft.CodeAnalysis.CodeFixes;
 using TestHelper;
 
 namespace SwitchAnalyzer.Test
@@ -78,23 +79,6 @@ namespace SwitchAnalyzer.Test
                           {codeEnd}";
 
             VerifyCSharpDiagnostic(test);
-        }
-
-        [TestMethod]
-        public void SimpleInvalid()
-        {
-            var switchStatement = @"
-            switch (TestEnum.Case1)
-            {
-                case TestEnum.Case2: return TestEnum.Case2;
-                case TestEnum.Case3: return TestEnum.Case3;
-                default: throw new NotImplementedException();
-            }";
-            var test = $@"{codeStart}
-                          {switchStatement}
-                          {codeEnd}";
-
-            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1"));
         }
 
         [TestMethod]
@@ -291,6 +275,142 @@ namespace SwitchAnalyzer.Test
             VerifyCSharpDiagnostic(test);
         }
 
+        [TestMethod]
+        public void FixSimple()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+                case TestEnum.Case2: return TestEnum.Case2;
+                case TestEnum.Case3: return TestEnum.Case3;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1"));
+
+
+            var expectedFixSwitch = @"
+            switch (TestEnum.Case1)
+            {
+                case TestEnum.Case2: return TestEnum.Case2;
+                case TestEnum.Case3: return TestEnum.Case3;
+                case TestEnum.Case1:
+                default: throw new NotImplementedException();
+            }";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixManyCases()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1", "TestEnum.Case2", "TestEnum.Case3"));
+
+
+            var expectedFixSwitch = @"
+            switch (TestEnum.Case1)
+            {
+                case TestEnum.Case1:
+                case TestEnum.Case2:
+                case TestEnum.Case3:
+                default: throw new NotImplementedException();
+            }";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixWithoutDefault1()
+        {
+            var switchStatement = @"
+            switch (TestEnum.Case1)
+            {
+            }
+            return TestEnum.Case1;";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1", "TestEnum.Case2", "TestEnum.Case3"));
+
+
+            var expectedFixSwitch = @"
+            switch (TestEnum.Case1)
+            {
+                case TestEnum.Case1:
+                case TestEnum.Case2:
+                case TestEnum.Case3:
+                    {
+                        break;
+                    }
+            }
+            return TestEnum.Case1;";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixWithoutDefault2()
+        {
+            var switchStatement = @"
+            switch (testValue)
+            {
+                case TestEnum.Case1:
+                    {
+                        var k = 3;
+                        break;
+                    }
+            }
+            return TestEnum.Case1;";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case2", "TestEnum.Case3"));
+
+
+            var expectedFixSwitch = @"
+            switch (testValue)
+            {
+                case TestEnum.Case1:
+                    {
+                        var k = 3;
+                        break;
+                    }
+
+                case TestEnum.Case2:
+                case TestEnum.Case3:
+                    {
+                        break;
+                    }
+            }
+            return TestEnum.Case1;";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+            VerifyCSharpFix(test, expectedResult);
+        }
 
         private DiagnosticResult GetDiagnostic(params string[] expectedEnums)
         {
@@ -310,6 +430,11 @@ namespace SwitchAnalyzer.Test
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new SwitchAnalyzer();
+        }
+
+        protected override CodeFixProvider GetCSharpCodeFixProvider()
+        {
+            return new SwitchAnalyzerCodeFixProvider();
         }
     }
 }
