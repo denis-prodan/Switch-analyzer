@@ -8,18 +8,18 @@ namespace SwitchAnalyzer
     class InterfaceAnalyzer
     {
         private const string Category = "Correctness";
-        public const string InterfaceDiagnosticId = "SA002";
-        private const string InterfaceTitle = "Non exhaustive patterns in switch block";
-        private const string InterfaceMessageFormat = "Switch case should check interface implementation of type(s): {0}";
-        private const string InterfaceDescription = "All interface implementations in pattern matching switch statement should be checked.";
+        public const string DiagnosticId = "SA002";
+        private const string Title = "Non exhaustive patterns in switch block";
+        private const string MessageFormat = "Switch case should check interface implementation of type(s): {0}";
+        private const string Description = "All interface implementations in pattern matching switch statement should be checked.";
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
-            id: InterfaceDiagnosticId,
-            title: InterfaceTitle,
-            messageFormat: InterfaceMessageFormat, 
+            id: DiagnosticId,
+            title: Title,
+            messageFormat: MessageFormat, 
             category: Category, 
             defaultSeverity: DiagnosticSeverity.Warning, 
             isEnabledByDefault: true, 
-            description: InterfaceDescription);
+            description: Description);
 
 
         public static bool ShouldProceedWithChecks(SyntaxList<SwitchSectionSyntax> caseSyntaxes)

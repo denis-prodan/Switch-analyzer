@@ -92,19 +92,20 @@ namespace SwitchAnalyzer
                 || rule == null)
                 return;
 
-            if (!shouldProceedFunc.Invoke())
+            if (!shouldProceedFunc())
                 return;
 
-            var allImplementations = allImplementationsFunc.Invoke().ToList();
-            var caseImplementations = caseImplementationFunc.Invoke();
+            var allImplementations = allImplementationsFunc().ToList();
+
+            var obj = new object();
+            var caseImplementations = caseImplementationFunc().ToDictionary(x => x, _ => obj);
 
             var checkedValues = allImplementations
-                .Where(expectedValue => caseImplementations
-                    .Any(caseValue => caseValue == expectedValue.Name))
-                .ToList();
+                .Where(expectedValue => caseImplementations.ContainsKey(expectedValue.Name))
+                .ToDictionary(x => x.Value, x => obj);
 
             var notCheckedValues = allImplementations.Where(x =>
-                checkedValues.All(checkedVal => !checkedVal.Value.Equals(x.Value)))
+                !checkedValues.ContainsKey(x.Value))
                 .OrderBy(x => x.Name)
                 .ToList();
 

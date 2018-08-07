@@ -10,18 +10,18 @@ namespace SwitchAnalyzer
     {
         private const string Category = "Correctness";
 
-        public const string EnumDiagnosticId = "SA001";
-        private const string EnumTitle = "Non exhaustive patterns in switch block";
-        private const string EnumMessageFormat = "Switch case should check enum value(s): {0}";
-        private const string EnumDescription = "All enum cases in switch statement should be checked.";
+        public const string DiagnosticId = "SA001";
+        private const string Title = "Non exhaustive patterns in switch block";
+        private const string MessageFormat = "Switch case should check enum value(s): {0}";
+        private const string Description = "All enum cases in switch statement should be checked.";
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
-            id: EnumDiagnosticId, 
-            title: EnumTitle, 
-            messageFormat: EnumMessageFormat, 
+            id: DiagnosticId, 
+            title: Title, 
+            messageFormat: MessageFormat, 
             category: Category, 
             defaultSeverity: DiagnosticSeverity.Warning, 
             isEnabledByDefault: true,
-            description: EnumDescription);
+            description: Description);
 
         public static IEnumerable<SwitchArgumentTypeItem<int>> AllEnumValues(ITypeSymbol expressionType)
         {

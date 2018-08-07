@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TestHelper;
@@ -148,6 +149,40 @@ namespace SwitchAnalyzer.Test
             VerifyCSharpDiagnostic(test);
         }
 
+        [TestMethod]
+        public void FixSimple()
+        {
+            var switchStatement = @"
+            BaseClass test = new TestClass2();
+            switch (test)
+            {
+                case TestClass3 a: return TestEnum.Case2;
+                case TestClass4 a: return TestEnum.Case3;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestClass2"));
+
+
+            var expectedFixSwitch = @"
+            BaseClass test = new TestClass2();
+            switch (test)
+            {
+                case TestClass3 a: return TestEnum.Case2;
+                case TestClass4 a: return TestEnum.Case3;
+                case TestClass2 t:
+                default: throw new NotImplementedException();
+            }";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
         private DiagnosticResult GetDiagnostic(params string[] expectedTypes)
         {
             return new DiagnosticResult
@@ -166,6 +201,11 @@ namespace SwitchAnalyzer.Test
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new SwitchAnalyzer();
+        }
+
+        protected override CodeFixProvider GetCSharpCodeFixProvider()
+        {
+            return new SwitchAnalyzerCodeFixProvider();
         }
     }
 }
