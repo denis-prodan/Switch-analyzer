@@ -36,37 +36,35 @@ namespace SwitchAnalyzer.Test
 
         private readonly string codeEnd =
         @"
-            }
+            }}
 
             public class NotImplementedExceptionInheritor : NotImplementedException
-            {
-            }
+            {{
+            }}
             private TestEnum GetEnum(TestEnum enumValue)
-            {
+            {{
                 return enumValue;
-            }
-        }
-    enum ByteEnum: byte
-    {
-        Case1 = 1,
-        Case2 = 2
-    }
+            }}
+        }}
+    {0}
     enum EnumWithDuplicates
-    {
+    {{
         Case1 = 1,
         Case2 = 2,
         DuplicateCase = 1
-    }
-    }
+    }}
+    }}
 namespace OtherNamespace
-    {
+    {{
         enum OtherEnum
-    {
+    {{
         Case1,
         Case2,
         Case3
-    }
-    }";
+    }}
+    }}";
+
+        private string GetEndSection(string additionalCode = "") => string.Format(codeEnd, additionalCode);
 
         //No diagnostics expected to show up
         [TestMethod]
@@ -90,7 +88,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -108,9 +106,40 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void OtherEnumTypeValid()
+        {
+            var enumWithOtherType = @"
+            enum OtherTypeEnum: {0}
+            {{
+                Case1 = 1,
+                Case2 = 2
+            }}";
+
+            var switchStatement = @"
+            switch (OtherTypeEnum.Case1)
+            {
+                case OtherTypeEnum.Case1: return TestEnum.Case1;
+                default: throw new NotImplementedException();
+            }";
+
+            var types = new[] { "int", "uint", "short", "ushort", "byte", "sbyte", "long", "ulong" };
+            foreach (var typeName in types)
+            {
+                
+                var substitutedEnum = string.Format(enumWithOtherType, typeName);
+
+                var test = $@"{codeStart}
+                          {switchStatement}
+                          {GetEndSection(substitutedEnum)}";
+
+                VerifyCSharpDiagnostic(test, GetDiagnostic("OtherTypeEnum.Case2"));
+            }
         }
 
         [TestMethod]
@@ -125,7 +154,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case3"));
         }
@@ -146,7 +175,7 @@ namespace OtherNamespace
 
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1"));
         }
@@ -166,7 +195,7 @@ namespace OtherNamespace
             return TestEnum.Case2;";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -182,7 +211,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1", "TestEnum.Case3"));
         }
@@ -200,7 +229,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -217,7 +246,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -234,7 +263,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1, TestEnum.Case2"));
         }
@@ -252,7 +281,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -268,7 +297,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -284,7 +313,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case2", "TestEnum.Case3"));
         }
@@ -302,7 +331,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -319,7 +348,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
         }
@@ -336,7 +365,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1"));
 
@@ -351,7 +380,7 @@ namespace OtherNamespace
             }";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpFix(test, expectedResult);
         }
@@ -366,7 +395,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1", "TestEnum.Case2", "TestEnum.Case3"));
 
@@ -381,7 +410,7 @@ namespace OtherNamespace
             }";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpFix(test, expectedResult);
         }
@@ -396,7 +425,7 @@ namespace OtherNamespace
             return TestEnum.Case1;";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case1", "TestEnum.Case2", "TestEnum.Case3"));
 
@@ -414,7 +443,7 @@ namespace OtherNamespace
             return TestEnum.Case1;";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpFix(test, expectedResult);
         }
@@ -434,7 +463,7 @@ namespace OtherNamespace
             return TestEnum.Case1;";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("TestEnum.Case2", "TestEnum.Case3"));
 
@@ -457,7 +486,7 @@ namespace OtherNamespace
             return TestEnum.Case1;";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
-                          {codeEnd}";
+                          {GetEndSection()}";
             VerifyCSharpFix(test, expectedResult);
         }
 
@@ -473,7 +502,7 @@ namespace OtherNamespace
             }";
             var test = $@"{codeStart}
                           {switchStatement}
-                          {codeEnd}";
+                          {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test, GetDiagnostic("OtherNamespace.OtherEnum.Case3"));
 
@@ -487,7 +516,7 @@ namespace OtherNamespace
             }";
             var expectedResult = $@"{codeStart}
                           {expectedFixSwitch}
-                          {codeEnd}";
+                          {GetEndSection()}";
             VerifyCSharpFix(test, expectedResult);
         }
 

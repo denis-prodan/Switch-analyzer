@@ -43,10 +43,60 @@ namespace SwitchAnalyzer
             if (expressionType.TypeKind == TypeKind.Enum)
             {
                 bool ShouldProceed() => EnumAnalyzer.ShouldProceedWithChecks(switchCases);
-                IEnumerable<SwitchArgumentTypeItem<int>> AllImplementations() => EnumAnalyzer.AllEnumValues(expressionType);
                 IEnumerable<string> CaseImplementations() => EnumAnalyzer.CaseIdentifiers(switchCases);
-
-                ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                
+                var namedType = expressionType as INamedTypeSymbol;
+                switch (namedType.EnumUnderlyingType.Name)
+                {
+                    case "Int32":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<int>> AllImplementations() => EnumAnalyzer.AllEnumValues<int>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "UInt32":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<uint>> AllImplementations() => EnumAnalyzer.AllEnumValues<uint>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "Int64":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<long>> AllImplementations() => EnumAnalyzer.AllEnumValues<long>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "UInt64":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<ulong>> AllImplementations() => EnumAnalyzer.AllEnumValues<ulong>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "Byte":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<byte>> AllImplementations() => EnumAnalyzer.AllEnumValues<byte>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "SByte":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<sbyte>> AllImplementations() => EnumAnalyzer.AllEnumValues<sbyte>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "Int16":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<short>> AllImplementations() => EnumAnalyzer.AllEnumValues<short>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                    case "UInt16":
+                        {
+                            IEnumerable<SwitchArgumentTypeItem<ushort>> AllImplementations() => EnumAnalyzer.AllEnumValues<ushort>(expressionType);
+                            ProcessSwitch(ShouldProceed, AllImplementations, CaseImplementations, EnumAnalyzer.Rule);
+                            break;
+                        }
+                }
             }
 
             if (expressionType.TypeKind == TypeKind.Interface)
