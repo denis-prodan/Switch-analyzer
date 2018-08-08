@@ -39,7 +39,7 @@ namespace SwitchAnalyzer
         {
             var allSymbols = semanticModel.LookupSymbols(switchStatementLocationStart);
             var namedTypeSymbols = allSymbols.Where(x => x.Kind == SymbolKind.NamedType).OfType<INamedTypeSymbol>();
-            var implementations = namedTypeSymbols.Where(namedType => namedType.AllInterfaces.Any(x => x.Name == interfaceType.Name));
+            var implementations = namedTypeSymbols.Where(namedType => namedType.Interfaces.Any(x => x.Name == interfaceType.Name));
             return implementations.Select(x => new SwitchArgumentTypeItem<string>(
                 prefix: x.ContainingNamespace.Name,
                 member: x.Name,
