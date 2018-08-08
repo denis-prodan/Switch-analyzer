@@ -23,15 +23,15 @@ namespace SwitchAnalyzer
             isEnabledByDefault: true,
             description: Description);
 
-        public static IEnumerable<SwitchArgumentTypeItem<int>> AllEnumValues(ITypeSymbol expressionType)
+        public static IEnumerable<SwitchArgumentTypeItem<T>> AllEnumValues<T>(ITypeSymbol expressionType)
         {
             var expressionTypeEnumName = expressionType.Name;
             var enumSymbols = expressionType.GetMembers().Where(x => x.Kind == SymbolKind.Field).OfType<IFieldSymbol>();
-            var allEnumValues = enumSymbols.Select(x => new SwitchArgumentTypeItem<int>(
+            var allEnumValues = enumSymbols.Select(x => new SwitchArgumentTypeItem<T>(
                 prefix: x.ContainingNamespace.Name,
                 member: expressionTypeEnumName,
                 fullName: $"{expressionTypeEnumName}.{x.Name}", 
-                value: (int) x.ConstantValue));
+                value: (T) x.ConstantValue)).ToList();
             return allEnumValues;
         }
 
