@@ -173,7 +173,39 @@ namespace SwitchAnalyzer.Test
             {
                 case TestClass3 a: return TestEnum.Case2;
                 case TestClass4 a: return TestEnum.Case3;
-                case TestClass2 t:
+                case TestClass2 _:
+                default: throw new NotImplementedException();
+            }";
+            var expectedResult = $@"{codeStart}
+                          {expectedFixSwitch}
+                          {codeEnd}";
+
+            VerifyCSharpFix(test, expectedResult);
+        }
+
+        [TestMethod]
+        public void FixMoreThanOneValue()
+        {
+            var switchStatement = @"
+            BaseClass test = new TestClass2();
+            switch (test)
+            {
+                case TestClass3 a: return TestEnum.Case2;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("TestClass2", "TestClass4"));
+
+            var expectedFixSwitch = @"
+            BaseClass test = new TestClass2();
+            switch (test)
+            {
+                case TestClass3 a: return TestEnum.Case2;
+                case TestClass2 _:
+                case TestClass4 _:
                 default: throw new NotImplementedException();
             }";
             var expectedResult = $@"{codeStart}
