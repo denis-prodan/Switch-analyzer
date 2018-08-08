@@ -44,7 +44,10 @@ namespace SwitchAnalyzer.Test
             public class OneMoreInheritor : ITestInterface
             {
             }
-           public interface IChildInterface: ITestInterface
+            public interface IChildInterface: ITestInterface
+            {
+            }
+            public interface IGrandChild: IChildInterface
             {
             }
             private TestEnum GetEnum(TestEnum enumValue)
