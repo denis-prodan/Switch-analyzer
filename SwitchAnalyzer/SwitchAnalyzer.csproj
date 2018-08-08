@@ -17,7 +17,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>Check that switch statement covers all cases for enumerations, all Interface implementations or base class inheritors.
 Additional rule to  check - switch statement doesn't have "default" branch or this branch throws exception.</Description>
-    <PackageReleaseNotes>For pattern matching switch fixer now adds discard pattern instead of variable name (to avoid compiler errors)</PackageReleaseNotes>
+    <PackageReleaseNotes>Don't check "grandchild" interface implementations.</PackageReleaseNotes>
     <Copyright></Copyright>
     <PackageTags>SwitchAnalyzer, analyzers</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
