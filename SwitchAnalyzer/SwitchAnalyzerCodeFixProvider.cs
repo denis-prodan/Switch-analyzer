@@ -137,9 +137,8 @@ namespace SwitchAnalyzer
             // Class/interface implementation
             if (parts.Length == 1)
             {
-                var identifier = Identifier(caseName[0].ToString().ToLower());
                 var declaration = DeclarationPattern(
-                    ParseTypeName(caseName), SingleVariableDesignation(identifier));
+                    ParseTypeName(caseName), DiscardDesignation());
                 return CasePatternSwitchLabel(declaration, colonToken);
             }
 

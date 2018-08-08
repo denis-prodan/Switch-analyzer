@@ -211,7 +211,7 @@ namespace SwitchAnalyzer.Test
             {
                 case TestClass a: return TestEnum.Case2;
                 case IChildInterface i: return TestEnum.Case1;
-                case OneMoreInheritor o:
+                case OneMoreInheritor _:
                 default: throw new NotImplementedException();
             }";
             var expectedResult = $@"{codeStart}
@@ -244,7 +244,7 @@ namespace SwitchAnalyzer.Test
             {
                 case TestClass a: return TestEnum.Case2;
                 case OneMoreInheritor o: return TestEnum.Case1;
-                case IChildInterface i:
+                case IChildInterface _:
                 default: throw new NotImplementedException();
             }";
             var expectedResult = $@"{codeStart}
