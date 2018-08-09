@@ -62,6 +62,12 @@ namespace OtherNamespace
         Case2,
         Case3
     }}
+    enum TestEnum
+    {{
+        OtherNamespaceCase1,
+        OtherNamespaceCase2,
+        OtherNamespaceCase3
+    }}
     }}";
 
         private string GetEndSection(string additionalCode = "") => string.Format(codeEnd, additionalCode);
@@ -91,6 +97,23 @@ namespace OtherNamespace
                           {GetEndSection()}";
 
             VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void ValidWithOtherNamespace()
+        {
+            var switchStatement = @"
+            switch (OtherNamespace.TestEnum.OtherNamespaceCase1)
+            {
+                case OtherNamespace.TestEnum.OtherNamespaceCase1: return TestEnum.Case1;
+                case OtherNamespace.TestEnum.OtherNamespaceCase2: return TestEnum.Case2;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {GetEndSection()}";
+
+            VerifyCSharpDiagnostic(test, GetDiagnostic("OtherNamespace.TestEnum.OtherNamespaceCase3"));
         }
 
         [TestMethod]
