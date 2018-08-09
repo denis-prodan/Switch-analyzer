@@ -55,7 +55,19 @@ namespace SwitchAnalyzer.Test
                 return enumValue;
             }
         }
-    }";
+    }
+namespace OtherNamespace
+{
+    public interface ITestInterface
+    {
+    }
+    public class OneMoreInheritor : ITestInterface
+    {
+    }
+    public interface IChildInterface: ITestInterface
+    {
+    }
+}";
 
         [TestMethod]
         public void SimpleValid()
@@ -187,6 +199,24 @@ namespace SwitchAnalyzer.Test
                           {switchStatement}
                           {codeEnd}";
 
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void DontCheckFromOtherNamespace()
+        {
+            var switchStatement = @"
+            OtherNamespace.ITestInterface test = new OtherNamespace.TestClass();
+            switch (test)
+            {
+                case OtherNamespace.OneMoreInheritor o: return TestEnum.Case1;
+                default: throw new NotImplementedException();
+            }";
+            var test = $@"{codeStart}
+                          {switchStatement}
+                          {codeEnd}";
+
+            // No check for items from other namespaces not referenced in current place.
             VerifyCSharpDiagnostic(test);
         }
 
