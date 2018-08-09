@@ -164,9 +164,10 @@ namespace SwitchAnalyzer
 
             if (notCheckedValues.Any())
             {
-                var typeName = notCheckedValues.First().Member;
+                var firstUncheckedValue = notCheckedValues.First();
+                var typeName = firstUncheckedValue.Member;
                 var symbols = context.SemanticModel.LookupSymbols(switchStatementLocation);
-                var shouldAddNamespace = !symbols.Any(x => x.Name == typeName);
+                var shouldAddNamespace = !symbols.Any(x => x.Name == typeName && x.ContainingNamespace.Name == firstUncheckedValue.Prefix);
 
                 var notCoveredValues = notCheckedValues.Select(caseName =>
                     BuildName(shouldAddNamespace, caseName.Prefix, caseName.FullName));
